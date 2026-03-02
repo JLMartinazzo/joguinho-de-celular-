@@ -15,26 +15,36 @@ let player = {
 let obstacles = [];
 let score = 0;
 let gameOver = false;
+let frameCount = 0;
 
-// Controle por toque
+// Sistema de dificuldade
+let difficulty = {
+    level: 1,
+    obstacleSpeed: 3,
+    spawnRate: 0.02,
+    maxObstacleSize: 40
+};
+
+// Controle touch
 canvas.addEventListener("touchmove", (e) => {
     let touch = e.touches[0];
     player.x = touch.clientX - player.width / 2;
 });
 
-// Controle para desktop também
+// Controle mouse (desktop)
 canvas.addEventListener("mousemove", (e) => {
     player.x = e.clientX - player.width / 2;
 });
 
 function createObstacle() {
-    let size = 40;
+    let size = Math.random() * difficulty.maxObstacleSize + 20;
+
     obstacles.push({
         x: Math.random() * (canvas.width - size),
         y: -size,
         width: size,
         height: size,
-        speed: 4
+        speed: difficulty.obstacleSpeed + Math.random() * 1.5
     });
 }
 
@@ -54,7 +64,7 @@ function updateObstacles() {
     obstacles.forEach(obs => {
         obs.y += obs.speed;
 
-        // Colisão
+        // Detecção de colisão (AABB)
         if (
             player.x < obs.x + obs.width &&
             player.x + player.width > obs.x &&
@@ -68,6 +78,23 @@ function updateObstacles() {
     obstacles = obstacles.filter(obs => obs.y < canvas.height);
 }
 
+function updateDifficulty() {
+    // A cada 600 frames (~10 segundos)
+    if (frameCount % 600 === 0) {
+        difficulty.level++;
+        difficulty.obstacleSpeed += 0.5;
+        difficulty.spawnRate += 0.005;
+        difficulty.maxObstacleSize += 5;
+
+        console.log("Level:", difficulty.level);
+    }
+}
+
+function updateScore() {
+    score++;
+    document.getElementById("score").innerText = score;
+}
+
 function endGame() {
     gameOver = true;
     document.getElementById("gameOverScreen").classList.remove("hidden");
@@ -76,14 +103,19 @@ function endGame() {
 function restartGame() {
     obstacles = [];
     score = 0;
+    frameCount = 0;
     gameOver = false;
+
+    difficulty = {
+        level: 1,
+        obstacleSpeed: 3,
+        spawnRate: 0.02,
+        maxObstacleSize: 40
+    };
+
+    document.getElementById("score").innerText = "0";
     document.getElementById("gameOverScreen").classList.add("hidden");
     loop();
-}
-
-function updateScore() {
-    score++;
-    document.getElementById("score").innerText = score;
 }
 
 function loop() {
@@ -91,12 +123,16 @@ function loop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    frameCount++;
+
+    updateDifficulty();
+
     drawPlayer();
     drawObstacles();
     updateObstacles();
     updateScore();
 
-    if (Math.random() < 0.03) {
+    if (Math.random() < difficulty.spawnRate) {
         createObstacle();
     }
 
