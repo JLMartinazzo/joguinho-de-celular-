@@ -20,6 +20,8 @@ let stars = [];
 let score = 0;
 let gameOver = false;
 let frameCount = 0;
+let lifes = 3;
+renderLifes();
 
 // balanço de dificulade
 let difficulty = {
@@ -73,7 +75,8 @@ function createObstacle() {
         y: -size,
         width: size,
         height: size,
-        speed: difficulty.obstacleSpeed + Math.random()
+        speed: difficulty.obstacleSpeed + Math.random(),
+        hit: false //  flag de colisão
     });
 }
 
@@ -138,17 +141,29 @@ function updateObstacles() {
         obs.y += obs.speed;
 
         if (
+            !obs.hit && // 👈 só permite uma colisão
             player.x < obs.x + obs.width &&
             player.x + player.width > obs.x &&
             player.y < obs.y + obs.height &&
             player.y + player.height > obs.y
         ) {
-            createParticles(player.x + player.width/2, player.y + player.height/2);
-            endGame();
+            obs.hit = true; // 👈 marca como já colidido
+            createParticles(player.x + player.width / 2, player.y + player.height / 2);
+            updateLifes();
         }
     });
 
     obstacles = obstacles.filter(obs => obs.y < canvas.height);
+}
+
+function updateLifes() {
+    lifes--;
+    renderLifes();
+    if (lifes == 0) {
+        console.log("morreu")
+        createParticles(player.x + player.width / 2, player.y + player.height / 2);
+        endGame();
+    }
 }
 
 function updateDifficulty() {
@@ -204,6 +219,16 @@ function loop() {
     }
 
     requestAnimationFrame(loop);
+}
+
+//cria o contador de vidas
+function renderLifes() {
+    const lifesContainer = document.getElementById("lifes");
+    lifesContainer.innerHTML = "";
+
+    for (let i = 0; i < lifes; i++) {
+        lifesContainer.innerHTML += "❤️";
+    }
 }
 
 loop();
